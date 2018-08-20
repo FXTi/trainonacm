@@ -1,45 +1,101 @@
-#include <cstdio>
+#include <iostream>
 #include <queue>
 #include <string>
 #include <cstring>
 using namespace std;
 
-const long long mod = 4294967296;
+struct Node{
+    int child;
+    int brother;
+    int cnt;
+    char c;
+};
 
-long long sum[3010][3010] = {0};
-int n, m, q;
+Node node[15000000];
 
-unsigned int A,B,C;
-inline unsigned int rng61(){
-    A ^= A << 16;
-    A ^= A >> 5;
-    A ^= A << 1;
-    unsigned int t = A;
-    A = B;
-    B = C;
-    C ^= t ^ A;
-    return C;
+int pos;
+
+void add(const string &s){
+    int sp = 0, np = 0;
+    bool build = false;
+    while(sp < s.size()){
+        if(build){
+            while(sp < s.size()){
+                node[pos].c = s[sp];
+                node[pos].cnt = 1;
+                node[np].child = pos;
+                np = pos++;
+                ++sp;
+            }
+        } else {
+        if(node[np].c == s[sp]){
+            ++node[np].cnt;
+            if(node[np].child)
+                np = node[np].child;
+            else
+                build = true;
+        } else {
+            while(node[np].brother && node[np].c != s[sp])
+                np = node[np].brother;
+            if(node[np].c == s[sp]){
+                ++node[np].cnt;
+                if(node[np].child)
+                    np = node[np].child;
+                else
+                    build = true;
+            } else {
+                node[pos].c = s[sp];
+                node[pos].cnt = 1;
+                node[np].brother = pos;
+                np = pos++;
+                build = true;
+            }
+        }
+        ++sp;
+        }
+    }
+}
+
+int search(){
+    int cnt = 0;
+    for(int np = node[0].brother; np; np = node[np].brother){
+        if(node[np].cnt <= 5)
+            ++cnt;
+        else {
+        queue<int> Q;
+        Q.push(node[np].child);
+        while(!Q.empty()){
+            int i = Q.front(); Q.pop();
+            for(; i; i = node[i].brother){
+                if(node[i].cnt <= 5){
+                    ++cnt;
+                } else
+                    Q.push(node[i].child);
+            }
+        }
+        }
+    }
+    return cnt;
 }
 
 int main(){
-    scanf("%d%d%d%u%u%u", &n, &m, &q, &A, &B, &C);
-    for(int i = 1; i <= n; i++){
-        for(int j = 1; j <= m; j++){
-            sum[i][j] = (rng61() + sum[i][j-1]) % mod;
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int T, n;
+    string s;
+    cin >> T;
+    while(T--){
+        memset(node, 0, sizeof(node));
+        pos = 1;
+        node[0].c = 'A';
+        node[0].cnt = 1;
+        cin >> n;
+        while(n--){
+            cin >> s;
+            add(s);
         }
+        cout << search() << endl;
     }
-    unsigned int x, y, k;
-    long long ans = 0;
-    for(int i = 1; i <= q; i++){
-        long long tmp = 0;
-        x = rng61() % n + 1;
-        y = rng61() % m + 1;
-        k = rng61() % min(x, y) + 1;
-        for(int u = 1; u <= k; ++u)
-            tmp = (tmp + sum[x - u + 1][y] - sum[x - u + 1][y - k + u - 1]) % mod;
-        ans = ans * 233 % mod + tmp % mod;
-        ans %= mod;
-    }
-    printf("%lld\n", ans);
     return 0;
 }
